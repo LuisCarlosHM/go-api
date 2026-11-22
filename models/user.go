@@ -1,6 +1,9 @@
 package models
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/LuisCarlosHM/go-api/db"
 	"github.com/LuisCarlosHM/go-api/utils"
 )
@@ -39,10 +42,22 @@ func (u User) Save() error {
 	return err
 }
 
-func (u User) ValidateCredentials() {
-	query := "SELECT password FROM users WHERE email = ?"
+func (u *User) ValidateCredentials() error {
+	query := "SELECT id, password FROM users WHERE email = ?"
 	row := db.DB.QueryRow(query, u.Email)
 
 	var retrievedPassword string
-	row.Scan(retrievedPassword)
+	err := row.Scan(&u.ID, &retrievedPassword)
+
+	if err != nil {
+		return err
+	}
+	fmt.Println("")
+	passwordIsValid := utils.CheckPasswordHash(u.Password, retrievedPassword)
+
+	if !passwordIsValid {
+		return errors.New("Credentials invalid")
+	}
+
+	return nil
 }
